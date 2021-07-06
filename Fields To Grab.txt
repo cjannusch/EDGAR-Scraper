@@ -1,4 +1,3 @@
-??entityName
 EntityCommonStockSharesOutstanding
 EntityPublicFloat
 AccountsReceivableNet

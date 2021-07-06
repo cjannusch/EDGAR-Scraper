@@ -1,4 +1,7 @@
 import os,json,requests,shutil,zipfile
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import datetime as dt
 
 def downloadRelevantFiles(overwrite = False):
     #Gotta do the header otherwise they block you lul
@@ -48,6 +51,34 @@ def getFactsOfCompany(ticker):
     file = open(fileName)
     result = json.load(file)
     print(result["entityName"])
+    file = open("Fields To Grab.txt", 'r')
+    listOfFields = file.readlines()
+    for field in listOfFields:
+        try:
+            data = result['facts']['us-gaap'][field.strip()]['units']['USD']
+            #print(data)
+            print("got data in", field)
+
+        except Exception as excep:
+            print("error",excep.with_traceback)
+            continue
+        dates,values = [],[]
+        for point in data:
+            dates.append(point['end'])
+            values.append(point['val'])
+
+        print(len(dates),len(values))
+        
+        x = [dt.datetime.strptime(d,'%Y-%m-%d').date() for d in dates]
+        #print(len(x))
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval = 365))
+        plt.plot(x,values)
+        plt.xlabel('date' + ' (' + str(len(values)) + ' # of data points)', fontsize=16)
+        plt.ylabel(field, fontsize=8)
+        plt.gcf().autofmt_xdate()
+        plt.show()
+
 
 def readNames():
 
@@ -67,9 +98,9 @@ def readNames():
         count = count + 1
 
 def Main():
-    downloadRelevantFiles()
-    #tickerToCIKDict,cikToTickerDict = convertTickersToCIKDict()
+    #downloadRelevantFiles()
+    tickerToCIKDict,cikToTickerDict = convertTickersToCIKDict()
     #print(convertTickerToCIK("aapl",tickerToCIKDict))
-    #getFactsOfCompany(convertTickerToCIK("plug",tickerToCIKDict))
-
+    getFactsOfCompany(convertTickerToCIK("f",tickerToCIKDict))
+    #getFactsOfCompany(4611)
 Main()
