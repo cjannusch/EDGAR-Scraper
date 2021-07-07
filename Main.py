@@ -40,6 +40,7 @@ def convertCIKToTicker(CIK,cikToTickerDict):
     return cikToTickerDict[CIK]
 
 def getFactsOfCompany(ticker):
+    
     if type(ticker) == int:
         ticker = str(ticker)
     file = "CIK"
@@ -54,14 +55,14 @@ def getFactsOfCompany(ticker):
     file = open("Fields To Grab.txt", 'r')
     listOfFields = file.readlines()
     for field in listOfFields:
+        
         try:
             data = result['facts']['us-gaap'][field.strip()]['units']['USD']
-            #print(data)
             print("got data in", field)
-
         except Exception as excep:
             print("error",excep.with_traceback)
             continue
+        
         dates,values = [],[]
         for point in data:
             dates.append(point['end'])
@@ -70,7 +71,6 @@ def getFactsOfCompany(ticker):
         print(len(dates),len(values))
         
         x = [dt.datetime.strptime(d,'%Y-%m-%d').date() for d in dates]
-        #print(len(x))
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval = 365))
         plt.plot(x,values)
@@ -85,22 +85,29 @@ def readNames():
     listOfFiles = os.listdir("companyfacts")
 
     count = 0
+    listOfNames = []
 
     for file in listOfFiles:
-        if count == 1:
-            break
         fileName = os.path.join("companyfacts",file)
-        #fileName = os.path.join("companyfacts","CIK0001018724.json")
         file = open(fileName)
         result = json.load(file)
-        print(type(result))
-        print(result["entityName"])
+        try:
+            name = result["entityName"]
+        except Exception:
+            print("error getting name")
+            continue
+        if name == "":
+            continue
+        listOfNames.append(name)
         count = count + 1
+        
+    print(set(listOfNames))
 
 def Main():
-    #downloadRelevantFiles()
+    downloadRelevantFiles()
     tickerToCIKDict,cikToTickerDict = convertTickersToCIKDict()
     #print(convertTickerToCIK("aapl",tickerToCIKDict))
-    getFactsOfCompany(convertTickerToCIK("f",tickerToCIKDict))
+    #getFactsOfCompany(convertTickerToCIK("f",tickerToCIKDict))
     #getFactsOfCompany(4611)
+    readNames()
 Main()
