@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime as dt
 import time
+import pandas as pd
+import csv
+import datetime
 
 def downloadRelevantFiles(overwrite = False):
     #Gotta do the header otherwise they block you lul
@@ -132,10 +135,58 @@ def getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,Year,debug = False):
 
 def getPastFieldWithinInterval(CIK,fieldInQuestion,beginningYear,endingYear):
     data = []
-    for i in range(endingYear-beginningYear + 1):
+    for i in range(endingYear-beginningYear):
         data.append(getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,beginningYear + i))
 
     return data
+
+def getFieldsForGivenCompany(CIK):
+       
+    if type(CIK) == int:
+        CIK = str(CIK)
+    file = "CIK"
+    for i in range(10 - len(CIK)):
+        file = file + "0"
+
+    file = file + CIK + ".json"
+    fileName = os.path.join("companyfacts",file)
+    file = open(fileName)
+    result = json.load(file)
+    data = result['facts']['us-gaap']
+    return data.keys()
+
+def getAllFieldsForLastFiveYearsToCSV(CIK):
+    year = datetime.datetime.now().year
+    file = open("Fields To Grab.txt", 'r')
+    listOfFields = getFieldsForGivenCompany(CIK)
+    #listOfFields = file.readlines()
+    #listOfFields = ["AccountsPayableCurrent","AccruedLiabilitiesCurrent","Assets","AvailableForSalesSecurities"]
+    finalCSVData = []
+    count = 0
+    for field in listOfFields:
+        print(field)
+        '''
+        if count == 25:
+        break'''
+        dataList = []
+        result = getPastFieldWithinInterval(CIK,field,year - 5,year)
+        #print(result)
+        for item in result:
+            #print(item)
+            if item == None:
+                dataList.append(None)
+                continue
+            dataList.append(item[0])
+        #print(dataList)
+        finalCSVData.append(pd.Series(dataList,index=[str(year - 5),str(year - 4),str(year - 3),str(year - 2),str(year - 1)], name = field))
+        count = count + 1
+    #print(finalCSVData)
+
+    df = pd.DataFrame(finalCSVData)
+    #print(df)
+
+    df.to_csv("test123.csv", encoding='utf-8')
+
 
 
 
@@ -155,9 +206,11 @@ def Main():
 
     start_time = time.time()
 
-    dataPoints = getPastFieldWithinInterval(convertTickerToCIK("amd",tickerToCIKDict),"Assets",2010,2021)
-    print(dataPoints)
+    #dataPoints = getPastFieldWithinInterval(convertTickerToCIK("amd",tickerToCIKDict),"Assets",2010,2021)
+    #print(dataPoints)
 
+    getAllFieldsForLastFiveYearsToCSV(convertTickerToCIK("amd",tickerToCIKDict))
+    print()
     print("init time took ", time.time() - start_time, "to find the field for given year")
 
 Main()
