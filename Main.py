@@ -2,6 +2,7 @@ import os,json,requests,shutil,zipfile
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime as dt
+import time
 
 def downloadRelevantFiles(overwrite = False):
     #Gotta do the header otherwise they block you lul
@@ -117,21 +118,33 @@ def getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,Year):
     for point in data:
         #print(point)
         if point['form'] == "10-K" and point['end'][0:4] == str(Year) and point['fy'] == Year:
-             toReturn = (point['val'],point['end'])
-             print(point)
+            toReturn = (point['val'],point['end'])
+            #print(point)
 
     return toReturn
 
 def Main():
+    start_time = time.time()
     downloadRelevantFiles()
     tickerToCIKDict,cikToTickerDict = convertTickersToCIKDict()
+    print("init time took ", time.time() - start_time, "to run")
 
     #print(convertTickerToCIK("aapl",tickerToCIKDict))
     #getFactsOfCompany(convertTickerToCIK("f",tickerToCIKDict))
     #getFactsOfCompany(4611)
     #readNames()
 
-    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"AccountsPayableCurrent",2020)
+    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2020)
     print(dataPoint)
+    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2019)
+    print(dataPoint)
+    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2018)
+    print(dataPoint)
+    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2017)
+    print(dataPoint)
+    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2016)
+    print(dataPoint)
+
+    print("init time took ", time.time() - start_time, "to find the field for given year")
 
 Main()
