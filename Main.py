@@ -1,4 +1,5 @@
 import os,json,requests,shutil,zipfile
+from numpy import empty
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import datetime as dt
@@ -110,18 +111,33 @@ def readNames():
         
     print(set(listOfNames))
 
-def getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,Year):
+def getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,Year,debug = False):
     result = getFactsOfCompany(CIK, toGraph = False, debug = False)
-
-    data = result['facts']['us-gaap'][fieldInQuestion]['units']['USD']
-
+    try:
+        data = result['facts']['us-gaap'][fieldInQuestion]['units']['USD']
+    except Exception:
+        if debug:
+            print("could not find field")
+        return
+    toReturn = None
     for point in data:
         #print(point)
         if point['form'] == "10-K" and point['end'][0:4] == str(Year) and point['fy'] == Year:
             toReturn = (point['val'],point['end'])
             #print(point)
+    if toReturn == None:
+        print("Could not find Field:", fieldInQuestion, "for year",Year)
 
     return toReturn
+
+def getPastFieldWithinInterval(CIK,fieldInQuestion,beginningYear,endingYear):
+    data = []
+    for i in range(endingYear-beginningYear + 1):
+        data.append(getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,beginningYear + i))
+
+    return data
+
+
 
 def Main():
     start_time = time.time()
@@ -134,16 +150,13 @@ def Main():
     #getFactsOfCompany(4611)
     #readNames()
 
-    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2020)
-    print(dataPoint)
-    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2019)
-    print(dataPoint)
-    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2018)
-    print(dataPoint)
-    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2017)
-    print(dataPoint)
-    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2016)
-    print(dataPoint)
+    #dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"CashAndCashEquivalentsAtCarryingValue",2020)
+    #print(dataPoint)
+
+    start_time = time.time()
+
+    dataPoints = getPastFieldWithinInterval(convertTickerToCIK("amd",tickerToCIKDict),"Assets",2010,2021)
+    print(dataPoints)
 
     print("init time took ", time.time() - start_time, "to find the field for given year")
 
