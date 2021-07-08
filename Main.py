@@ -39,28 +39,31 @@ def convertTickerToCIK(ticker,tickerToCIKDict):
 def convertCIKToTicker(CIK,cikToTickerDict):
     return cikToTickerDict[CIK]
 
-def getFactsOfCompany(ticker):
+def getFactsOfCompany(CIK, toGraph = False, debug = False):
     
-    if type(ticker) == int:
-        ticker = str(ticker)
+    if type(CIK) == int:
+        CIK = str(CIK)
     file = "CIK"
-    for i in range(10 - len(ticker)):
+    for i in range(10 - len(CIK)):
         file = file + "0"
 
-    file = file + ticker + ".json"
+    file = file + CIK + ".json"
     fileName = os.path.join("companyfacts",file)
     file = open(fileName)
     result = json.load(file)
-    print(result["entityName"])
+    if debug:
+        print(result["entityName"])
     file = open("Fields To Grab.txt", 'r')
     listOfFields = file.readlines()
     for field in listOfFields:
         
         try:
             data = result['facts']['us-gaap'][field.strip()]['units']['USD']
-            print("got data in", field)
+            if debug:
+                print("got data in", field)
         except Exception as excep:
-            print("error",excep.with_traceback)
+            if debug:
+                print("error",excep.with_traceback)
             continue
         
         dates,values = [],[]
@@ -68,17 +71,20 @@ def getFactsOfCompany(ticker):
             dates.append(point['end'])
             values.append(point['val'])
 
-        print(len(dates),len(values))
+        #print(len(dates),len(values))
         
-        x = [dt.datetime.strptime(d,'%Y-%m-%d').date() for d in dates]
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval = 365))
-        plt.plot(x,values)
-        plt.xlabel('date' + ' (' + str(len(values)) + ' # of data points)', fontsize=16)
-        plt.ylabel(field, fontsize=8)
-        plt.gcf().autofmt_xdate()
-        plt.show()
+        if toGraph:
 
+            x = [dt.datetime.strptime(d,'%Y-%m-%d').date() for d in dates]
+            plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval = 365))
+            plt.plot(x,values)
+            plt.xlabel('date' + ' (' + str(len(values)) + ' # of data points)', fontsize=16)
+            plt.ylabel(field, fontsize=8)
+            plt.gcf().autofmt_xdate()
+            plt.show()
+    
+    return result
 
 def readNames():
 
@@ -103,11 +109,29 @@ def readNames():
         
     print(set(listOfNames))
 
+def getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,Year):
+    result = getFactsOfCompany(CIK, toGraph = False, debug = False)
+
+    data = result['facts']['us-gaap'][fieldInQuestion]['units']['USD']
+
+    for point in data:
+        #print(point)
+        if point['form'] == "10-K" and point['end'][0:4] == str(Year) and point['fy'] == Year:
+             toReturn = (point['val'],point['end'])
+             print(point)
+
+    return toReturn
+
 def Main():
     downloadRelevantFiles()
     tickerToCIKDict,cikToTickerDict = convertTickersToCIKDict()
+
     #print(convertTickerToCIK("aapl",tickerToCIKDict))
     #getFactsOfCompany(convertTickerToCIK("f",tickerToCIKDict))
     #getFactsOfCompany(4611)
-    readNames()
+    #readNames()
+
+    dataPoint = getFieldOfCompanyOfGivenYear(convertTickerToCIK("amd",tickerToCIKDict),"AccountsPayableCurrent",2020)
+    print(dataPoint)
+
 Main()
