@@ -125,11 +125,13 @@ def getFieldOfCompanyOfGivenYear(CIK,fieldInQuestion,Year,debug = False):
     toReturn = None
     for point in data:
         #print(point)
-        if point['form'] == "10-K" and point['end'][0:4] == str(Year) and point['fy'] == Year:
+        if point['form'] == "10-K" and point['fy'] == Year:
+            ''' and point['end'][0:4] == str(Year  MIGHT NEED TO BE ADDED ABOVE IDK''' 
             toReturn = (point['val'],point['end'])
             #print(point)
     if toReturn == None:
-        print("Could not find Field:", fieldInQuestion, "for year",Year)
+        if debug:
+            print("Could not find Field:", fieldInQuestion, "for year",Year)
 
     return toReturn
 
@@ -155,7 +157,7 @@ def getFieldsForGivenCompany(CIK):
     data = result['facts']['us-gaap']
     return data.keys()
 
-def getAllFieldsForLastFiveYearsToCSV(CIK):
+def getAllFieldsForLastFiveYearsToCSV(CIK,outputFileName, debug = False):
     year = datetime.datetime.now().year
     file = open("Fields To Grab.txt", 'r')
     listOfFields = getFieldsForGivenCompany(CIK)
@@ -164,7 +166,8 @@ def getAllFieldsForLastFiveYearsToCSV(CIK):
     finalCSVData = []
     count = 0
     for field in listOfFields:
-        print(field)
+        if debug:
+            print(field)
         '''
         if count == 25:
         break'''
@@ -182,10 +185,18 @@ def getAllFieldsForLastFiveYearsToCSV(CIK):
         count = count + 1
     #print(finalCSVData)
 
+    for series in finalCSVData:
+        for item in series:
+            if item == None:
+                series = None
+
     df = pd.DataFrame(finalCSVData)
     #print(df)
 
-    df.to_csv("test123.csv", encoding='utf-8')
+    if os.path.exists(outputFileName):
+        os.remove(outputFileName)
+
+    df.to_csv(outputFileName, encoding='utf-8')
 
 
 
@@ -209,7 +220,7 @@ def Main():
     #dataPoints = getPastFieldWithinInterval(convertTickerToCIK("amd",tickerToCIKDict),"Assets",2010,2021)
     #print(dataPoints)
 
-    getAllFieldsForLastFiveYearsToCSV(convertTickerToCIK("amd",tickerToCIKDict))
+    getAllFieldsForLastFiveYearsToCSV(convertTickerToCIK("amd",tickerToCIKDict),"outputTest.csv")
     print()
     print("init time took ", time.time() - start_time, "to find the field for given year")
 
